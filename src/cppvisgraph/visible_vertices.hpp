@@ -58,7 +58,6 @@ public:
             if (p1.y() < edge.p1().y() && p1.y() < edge.p2().y()) continue;
             if (p1.y() > edge.p1().y() && p1.y() > edge.p2().y()) continue;
             if (p1.x() > edge.p1().x() && p1.x() > edge.p2().x()) continue;
-
             // Deal with points collinear to p1
             bool edge_p1_collinear = (ccw(p1, edge.p1(), p2) == COLLINEAR);
             bool edge_p2_collinear = (ccw(p1, edge.p2(), p2) == COLLINEAR);
@@ -275,7 +274,6 @@ public:
     }
 };
 
-
 class OpenEdges
 {
 public:
@@ -387,7 +385,6 @@ public:
         double distance1 = PolygonUtils::edge_distance(point, p1);
         double angle2 = PolygonUtils::angle(point, p2);
         double distance2 = PolygonUtils::edge_distance(point, p2);
-
         //return angle1 < angle2 || (angle1 == angle2 && distance1 < distance2);
         return std::tie(angle1, distance1) < std::tie(angle2, distance2);
     }

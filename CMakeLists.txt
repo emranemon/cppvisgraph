@@ -31,10 +31,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find the Python interpreter and pybind11 package
 ## Modify the path according to the desired Python installation (If there are multiple python distributions installed)
-#set(Python_EXECUTABLE "/Library/Frameworks/Python.framework/Versions/3.8/bin/python3")
+# set(Python_EXECUTABLE "/Library/Frameworks/Python.framework/Versions/3.8/bin/python3")
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 ## Modify the path according to the pybind11 installation (If there are multiple python distributions installed)
-#set(CMAKE_PREFIX_PATH "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pybind11" ${CMAKE_PREFIX_PATH})
+# set(CMAKE_PREFIX_PATH "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pybind11" ${CMAKE_PREFIX_PATH})
 find_package(pybind11 REQUIRED)
 # Include cppvisgraph headers
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -47,5 +47,9 @@ pybind11_add_module(cppyvisgraph MODULE src/pywrapper.cpp)
 add_executable(vgexample
   examples/vgexamples.cpp
   )
-# Link against Python libraries
-target_link_libraries(cppyvisgraph PRIVATE ${Python_LIBRARIES})
+# Link against pthread library
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(vgexample PRIVATE Threads::Threads)
+# Link against Python and pthread libraries
+target_link_libraries(cppyvisgraph PRIVATE ${Python_LIBRARIES} Threads::Threads)

@@ -142,6 +142,7 @@ class Graph
 {
 public:
     Graph() = default;
+    
     Graph(const std::vector<std::vector<Point>>& polygons)
     {
         int pid = 0;

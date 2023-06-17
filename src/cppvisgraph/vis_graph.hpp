@@ -36,6 +36,10 @@
 #include <algorithm>
 #include <cmath>
 #include <queue>
+#include <future>
+#include <functional>
+
+using namespace std::placeholders;
 
 namespace cppvisgraph
 {
@@ -85,24 +89,28 @@ public:
         }
     }
 
-    void build(const std::vector<std::vector<Point>>& input, int workers = 1, bool status = false)
-    {
+    void build(const std::vector<std::vector<Point>>& input, bool multi_thread = true, bool status = false) {
         // Build visibility graph based on a list of polygons
         graph = Graph(input);
         visgraph = Graph();
         std::vector<Point> points = graph.get_points();
         const int batch_size = 10;
-        if (workers == 1)
+        if(status)
         {
+            // Implement progress bar
+            std::cout << "Progress bar is not implemented yet." << std::endl;
+        }
+        if (multi_thread)
+        {
+            std::vector<std::future<std::vector<Edge>>> futures;
             for (size_t i = 0; i < points.size(); i += batch_size)
             {
-                if(status)
-                {
-                    // Implement progress bar
-                    std::cout << "Progress bar is not implemented yet." << std::endl;
-                }
                 std::vector<Point> batch(points.begin() + i, points.begin() + std::min(i + batch_size, points.size()));
-                for (const auto& edge : _vis_graph(graph, batch))
+                futures.push_back(std::async(std::launch::async, std::bind(&VisGraph::_vis_graph_by_vel, this, _1, _2), graph, batch));
+            }
+            for (auto& future : futures)
+            {
+                for (const auto& edge : future.get())
                 {
                     visgraph.add_edge(edge);
                 }
@@ -110,8 +118,14 @@ public:
         } 
         else
         {
-            // Implement multi-process version using workers
-            std::cout << "Multi-process version not implemented yet." << std::endl;
+            for (size_t i = 0; i < points.size(); i += batch_size)
+            {        
+                std::vector<Point> batch(points.begin() + i, points.begin() + std::min(i + batch_size, points.size()));
+                for (const auto& edge : _vis_graph_by_ref(graph, batch))
+                {
+                    visgraph.add_edge(edge);
+                }
+            }
         }
     }
 
@@ -177,7 +191,23 @@ public:
     }
 
 private:
-    std::vector<Edge> _vis_graph(const Graph& graph, const std::vector<Point>& points)
+    // For faster execution, threads will have seperate resources. As a result, will require more memory.
+    // Shared resource synchronization will make things slower.
+    std::vector<Edge> _vis_graph_by_vel(Graph graph, std::vector<Point> points)
+    {
+        // Compute visible edges for a batch of points
+        std::vector<Edge> visible_edges;
+        for (const auto& p1 : points)
+        {
+            for (const auto& p2 : VisibleVertices::visible_vertices(p1, graph, nullptr, nullptr, "half"))
+            {
+                visible_edges.push_back(Edge(p1, p2));
+            }
+        }
+        return visible_edges;
+    }
+
+    std::vector<Edge> _vis_graph_by_ref(const Graph& graph, const std::vector<Point>& points)
     {
         // Compute visible edges for a batch of points
         std::vector<Edge> visible_edges;

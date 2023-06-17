@@ -53,7 +53,6 @@ public:
             std::cout<< p << " ";
         }
         std::cout<<std::endl;
-
     }
     
     static void example_vg2(void)
@@ -75,7 +74,6 @@ public:
             std::cout<< p << " ";
         }
         std::cout<<std::endl;
-
     }
 };
 

@@ -122,7 +122,6 @@ private:
                 }
             }
         }
-
         return std::make_pair(D, P); 
     }
 
@@ -145,7 +144,6 @@ public:
         return path;
     }
 }; // class ShortestPath
-
 
 }  // namespace cppvisgraph
 #endif //CPPVISGRAPH_SHORTEST_PATH_HPP
