@@ -106,7 +106,7 @@ public:
             for (size_t i = 0; i < points.size(); i += batch_size)
             {
                 std::vector<Point> batch(points.begin() + i, points.begin() + std::min(i + batch_size, points.size()));
-                futures.push_back(std::async(std::launch::async, std::bind(&VisGraph::_vis_graph_by_vel, this, _1, _2), graph, batch));
+                futures.push_back(std::async(std::launch::async, std::bind(&VisGraph::_vis_graph_by_val, this, _1, _2), graph, batch));
             }
             for (auto& future : futures)
             {
@@ -193,7 +193,7 @@ public:
 private:
     // For faster execution, threads will have seperate resources. As a result, will require more memory.
     // Shared resource synchronization will make things slower.
-    std::vector<Edge> _vis_graph_by_vel(Graph graph, std::vector<Point> points)
+    std::vector<Edge> _vis_graph_by_val(Graph graph, std::vector<Point> points)
     {
         // Compute visible edges for a batch of points
         std::vector<Edge> visible_edges;
