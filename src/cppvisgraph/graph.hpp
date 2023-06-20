@@ -28,6 +28,7 @@
 #include <vector>
 #include <limits>
 #include <cmath>
+#include <mutex>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -142,7 +143,7 @@ class Graph
 {
 public:
     Graph() = default;
-    
+
     Graph(const std::vector<std::vector<Point>>& polygons)
     {
         int pid = 0;
@@ -178,6 +179,7 @@ public:
 
     std::vector<Point> get_adjacent_points(const Point& point) const 
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         std::vector<Point> adjacent_points;
         if(graph_.count(point)>0)
         {
@@ -192,6 +194,7 @@ public:
 
     std::vector<Point> get_points() const 
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         std::vector<Point> points;
         for (const auto& entry : graph_)
         {
@@ -202,16 +205,19 @@ public:
 
     std::unordered_set<Edge, EdgeHash> get_edges() const 
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         return edges_;
     }
 
     std::unordered_map<int, std::unordered_set<Edge, EdgeHash>> get_polygons() const 
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         return polygons_;
     }
 
     std::unordered_set<Edge, EdgeHash> operator[](const Point& p) const 
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         std::unordered_set<Edge, EdgeHash> edges;
         if(graph_.count(p)>0)
             edges = graph_.at(p);
@@ -220,6 +226,7 @@ public:
 
     void add_edge(const Edge& edge)
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         graph_[edge.p1()].insert(edge);
         graph_[edge.p2()].insert(edge);
         edges_.insert(edge);
@@ -227,15 +234,53 @@ public:
 
     bool contains(const Point& point) const 
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         return graph_.count(point) > 0;
     }
 
     bool contains(const Edge& edge) const 
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         return edges_.count(edge) > 0;
     }
 
+    // Move assignment operator
+    Graph& operator=(Graph&& other) noexcept
+    {
+        if (this == &other)
+        {
+            return *this;
+        }
+        other.mutex_.lock();
+        std::lock_guard<std::mutex> self_lock(mutex_, std::adopt_lock);
+        graph_ = std::move(other.graph_);
+        edges_ = std::move(other.edges_);
+        polygons_ = std::move(other.polygons_);
+        other.graph_.clear();
+        other.edges_.clear();
+        other.polygons_.clear();
+        other.mutex_.unlock();
+        return *this;
+    }
+
+    // Copy assignment operator
+    /* Graph& operator=(const Graph& other) 
+    {
+        if (this == &other)
+        {
+            return *this;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        other.mutex_.lock();
+        graph_ = other.graph_;
+        edges_ = other.edges_;
+        polygons_ = other.polygons_;
+        other.mutex_.unlock();
+        return *this;
+    } */
+
 private:
+    mutable std::mutex mutex_;
     std::unordered_map<Point, std::unordered_set<Edge, EdgeHash>, PointHash> graph_;
     std::unordered_set<Edge, EdgeHash> edges_;
     std::unordered_map<int, std::unordered_set<Edge, EdgeHash>> polygons_;

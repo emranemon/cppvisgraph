@@ -89,7 +89,8 @@ public:
         }
     }
 
-    void build(const std::vector<std::vector<Point>>& input, bool multi_thread = true, bool status = false) {
+    void build(const std::vector<std::vector<Point>>& input, const bool multi_thread = true, const bool status = false)
+    {
         // Build visibility graph based on a list of polygons
         graph = Graph(input);
         visgraph = Graph();
@@ -105,8 +106,8 @@ public:
             std::vector<std::future<std::vector<Edge>>> futures;
             for (size_t i = 0; i < points.size(); i += batch_size)
             {
-                std::vector<Point> batch(points.begin() + i, points.begin() + std::min(i + batch_size, points.size()));
-                futures.push_back(std::async(std::launch::async, std::bind(&VisGraph::_vis_graph_by_val, this, _1, _2), graph, batch));
+                futures.push_back(std::async(std::launch::async, std::bind(&VisGraph::_vis_graph, this, _1, _2), std::cref(graph),
+                                  get_batch(points, i, batch_size)));
             }
             for (auto& future : futures)
             {
@@ -120,8 +121,8 @@ public:
         {
             for (size_t i = 0; i < points.size(); i += batch_size)
             {        
-                std::vector<Point> batch(points.begin() + i, points.begin() + std::min(i + batch_size, points.size()));
-                for (const auto& edge : _vis_graph_by_ref(graph, batch))
+                std::vector<Point> batch = get_batch(points, i, batch_size);
+                for (const auto& edge : _vis_graph(graph, batch))
                 {
                     visgraph.add_edge(edge);
                 }
@@ -191,9 +192,7 @@ public:
     }
 
 private:
-    // For faster execution, threads will have seperate resources. As a result, will require more memory.
-    // Shared resource synchronization will make things slower.
-    std::vector<Edge> _vis_graph_by_val(Graph graph, std::vector<Point> points)
+    std::vector<Edge> _vis_graph(const Graph& graph, const std::vector<Point>& points)
     {
         // Compute visible edges for a batch of points
         std::vector<Edge> visible_edges;
@@ -207,18 +206,10 @@ private:
         return visible_edges;
     }
 
-    std::vector<Edge> _vis_graph_by_ref(const Graph& graph, const std::vector<Point>& points)
+    std::vector<Point> get_batch(const std::vector<Point>& points, const size_t index, const int batch_size)
     {
-        // Compute visible edges for a batch of points
-        std::vector<Edge> visible_edges;
-        for (const auto& p1 : points)
-        {
-            for (const auto& p2 : VisibleVertices::visible_vertices(p1, graph, nullptr, nullptr, "half"))
-            {
-                visible_edges.push_back(Edge(p1, p2));
-            }
-        }
-        return visible_edges;
+        // Slice points into batch
+        return std::vector<Point>(points.begin() + index, points.begin() + std::min(index + batch_size, points.size()));
     }
 };
 
