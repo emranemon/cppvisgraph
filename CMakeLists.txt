@@ -42,11 +42,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${pybind11_INCLUDE_DIRS})
 include_directories(${Python_INCLUDE_DIRS})
 # Add the pybind11 module
-pybind11_add_module(cppyvisgraph MODULE src/pywrapper.cpp)
+pybind11_add_module(cppyvisgraph MODULE src/vg_pybind11.cpp)
 # Add the cppvisgraph example module
-add_executable(vgexample
-  examples/vgexamples.cpp
-  )
+add_executable(vgexample examples/vgexamples.cpp)
 # Link against pthread library
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

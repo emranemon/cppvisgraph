@@ -144,6 +144,25 @@ class Graph
 public:
     Graph() = default;
 
+    /**
+    * @brief Construct a Graph from a list of polygons.
+    *
+    * A Graph is represented by a hashmap where the keys are Points in the Graph,
+    * and the hashmap values are hashsets containing Edges incident on each Point.
+    * A separate hashset named "edges" contains all Edges in the graph.
+    *
+    * The input must be a list of polygons, where each polygon is a list of
+    * in-order (clockwise or counter-clockwise) Points. If there is only one polygon,
+    * it must still be a list within a list, e.g., [[Point(0,0), Point(2,0), Point(2,1)]].
+    *
+    * The "polygons_" hashmap represents the polygons in the graph. The key is an
+    * integer polygon ID, and the values are the edges that make up the polygon.
+    * Note that only polygons with 3 or more Points will be classified as a polygon.
+    * Non-polygons, such as a single Point, will be given a polygon ID of -1 and not
+    * maintained in the hashmap.
+    *
+    * @param polygons List of polygons, where each polygon is represented by a vector of Points.
+    */
     Graph(const std::vector<std::vector<Point>>& polygons)
     {
         int pid = 0;

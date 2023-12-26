@@ -79,6 +79,6 @@ public:
 
 int main()
 {
-    vgexamples::example_vg1();
+    vgexamples::example_vg2();
     return 0;
 }

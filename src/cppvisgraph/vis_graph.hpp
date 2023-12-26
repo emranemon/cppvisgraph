@@ -89,6 +89,21 @@ public:
         }
     }
 
+    /**
+    * @brief Build visibility graph based on a list of polygons.
+    *
+    * This method constructs a visibility graph based on a list of polygons. The visibility graph
+    * represents the visibility relationships between points in the given polygons.
+    *
+    * @param input List of polygons, where each polygon is represented by a vector of points.
+    *              Each polygon should be a list of in-order (clockwise or counter-clockwise) Points.
+    *              If there's only one polygon, it must still be a list within a list, e.g.,
+    *              [[Point(0,0), Point(2,0), Point(2,1)]].
+    * @param multi_thread Flag indicating whether to use multi-threading during the build process.
+    * @param status Flag indicating whether to print status information during the build process.
+    *
+    * @note The implementation details of the visibility graph construction go here.
+    */
     void build(const std::vector<std::vector<Point>>& input, const bool multi_thread = true, const bool status = false)
     {
         // Build visibility graph based on a list of polygons
@@ -148,9 +163,23 @@ public:
         }
     }
 
+    /**
+    * @brief Find and return the shortest path between origin and destination.
+    *
+    * This method calculates and returns the in-order list of Points representing
+    * the shortest path between the given origin and destination Points within
+    * the visibility graph.
+    *
+    * If the origin or destination Points are not part of the visibility graph,
+    * their respective visibility edges will be found temporarily for path calculation.
+    *
+    * @param origin The starting Point of the path.
+    * @param destination The destination Point of the path.
+    *
+    * @return In-order list of Points representing the shortest path found.
+    */
     std::vector<Point> shortest_path(const Point& origin, const Point& destination)
     {
-        // Find and return the shortest path between origin and destination
         bool origin_exists = visgraph.contains(origin);
         bool destination_exists = visgraph.contains(destination);
         if (origin_exists && destination_exists)

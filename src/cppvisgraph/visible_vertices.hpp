@@ -49,6 +49,17 @@ namespace cppvisgraph
 class PolygonUtils
 {
 public:
+    /**
+    * @brief Returns true if Point p1 is internal to the polygon.
+    *
+    * The polygon is defined by the Edges in poly_edges. The method uses the crossings
+    * algorithm and takes into account edges that are collinear to p1.
+    *
+    * @param p1 The Point to check for internal position within the polygon.
+    * @param poly_edges The unordered set of Edges defining the polygon.
+    *
+    * @return True if Point p1 is internal to the polygon; otherwise, false.
+    */
     static bool polygon_crossing(const Point& p1, const std::unordered_set<Edge, EdgeHash>& poly_edges)
     {
         Point p2(INF, p1.y());
@@ -78,6 +89,15 @@ public:
         return (intersect_count % 2 != 0);
     }
 
+    /**
+    * @brief Returns true if the edge from Point p1 to Point p2 is interior to any polygon in the graph.
+    *
+    * @param p1 The starting Point of the edge.
+    * @param p2 The ending Point of the edge.
+    * @param graph The Graph containing polygons to check for edge interiority.
+    *
+    * @return True if the edge from Point p1 to Point p2 is interior to any polygon in the graph; otherwise, false.
+    */
     static bool edge_in_polygon(const Point& p1, const Point& p2, const Graph& graph)
     {
         if (p1.polygon_id() != p2.polygon_id()) return false;
@@ -86,6 +106,14 @@ public:
         return polygon_crossing(mid_point, graph.get_polygons().at(p1.polygon_id()));
     }
 
+    /**
+    * @brief Returns Int (Greater than -1) if the Point p is interior to any polygon in the graph.
+    *
+    * @param p The Point to check for interiority within any polygon.
+    * @param graph The Graph containing polygons to check for point interiority.
+    *
+    * @return Greater than -1 if the Point p is interior to any polygon in the graph; otherwise, -1.
+    */
     static int point_in_polygon(const Point& p, const Graph& graph)
     {
         for (int i = 0; i < graph.get_polygons().size(); ++i)
@@ -98,12 +126,34 @@ public:
         return -1;
     }
 
+    /**
+    * @brief Calculates and returns the unit vector from Point c to Point p.
+    *
+    * The unit vector is a vector with a length of 1 and points in the direction from Point c to Point p.
+    *
+    * @param c The starting Point of the vector.
+    * @param p The ending Point of the vector.
+    *
+    * @return The unit vector from Point c to Point p.
+    */
     static Point unit_vector(const Point& c, const Point& p)
     {
         double magnitude = edge_distance(c, p);
         return Point((p.x() - c.x()) / magnitude, (p.y() - c.y()) / magnitude);
     }
 
+    /**
+    * @brief Assumes Point p is interior to the polygon with the specified polygon_id.
+    *        Returns the closest point c outside the polygon to p, where the distance
+    *        from c to the intersect point from p to the edge of the polygon is length.
+    *
+    * @param p The Point assumed to be interior to the polygon.
+    * @param graph The Graph containing the polygon.
+    * @param polygon_id The ID of the polygon to which Point p is assumed to be interior.
+    * @param length The distance from the closest point c to the intersect point on the polygon edge (default is 0.001).
+    *
+    * @return The closest Point c outside the polygon to Point p.
+    */
     static Point closest_point(const Point& p, const Graph& graph, int polygon_id, double length = 0.001)
     {
         auto polygon_edges = graph.get_polygons().at(polygon_id);
@@ -161,11 +211,29 @@ public:
         }
     }
 
+    /**
+    * @brief Returns the Euclidean distance between two Points.
+    *
+    * @param p1 The first Point.
+    * @param p2 The second Point.
+    *
+    * @return The Euclidean distance between Point p1 and Point p2.
+    */
     static double edge_distance(const Point& p1, const Point& p2)
     {
         return sqrt(pow((p2.x() - p1.x()), 2) + pow((p2.y() - p1.y()), 2));
     }
     
+    /**
+    * @brief Returns the intersect Point where the edge from Point p1 to Point p2 intersects with the specified Edge.
+    *
+    * @param p1 The starting Point of the edge.
+    * @param p2 The ending Point of the edge.
+    * @param edge The Edge to check for intersection.
+    *
+    * @return The intersect Point where the edge from Point p1 to Point p2 intersects with the specified Edge,
+    *         or nullptr if there is no intersection.
+    */
     static Point* intersect_point(const Point& p1, const Point& p2, const Edge& edge)
     {
         if (edge.contains(p1)) return new Point(p1.x(), p1.y());
@@ -194,6 +262,17 @@ public:
         return new Point(intersect_x, intersect_y);
     }
 
+    /**
+    * @brief Returns the Euclidean distance from Point p1 to the intersect point with the specified Edge.
+    *
+    * Assumes the line going from Point p1 to Point p2 intersects the Edge before reaching Point p2.
+    *
+    * @param p1 The starting Point of the line.
+    * @param p2 The ending Point of the line.
+    * @param edge The Edge to check for intersection.
+    *
+    * @return The Euclidean distance from Point p1 to the intersect point with the specified Edge.
+    */
     static double point_edge_distance(const Point& p1, const Point& p2, const Edge& edge)
     {
         Point* ip = intersect_point(p1, p2, edge);
@@ -206,6 +285,22 @@ public:
         return p_edge_dist;
     }
 
+    /**
+    * @brief Returns the angle (in radians) of Point point from the center of the radial circle.
+    *
+    * The angle is calculated with respect to the positive x-axis, where the center is the origin.
+    *
+    *         ------p
+    *         |    /
+    *         |   /
+    *         |  /
+    *        c|a/
+    *
+    * @param center The center Point of the radial circle.
+    * @param point The Point for which the angle is calculated.
+    *
+    * @return The angle (in radians) of Point point from the center of the radial circle.
+    */
     static double angle(const Point& center, const Point& point)
     {
         double dx = point.x() - center.x();
@@ -227,6 +322,23 @@ public:
         return atan(dy / dx);
     }
 
+    /**
+    * @brief Returns the angle B (in radians) between Point point_b and Point point_c.
+    *
+    * The angle is calculated within the context of a triangle with vertices at Point point_a, point_b, and point_c.
+    * Angle B is the angle at vertex point_b.
+    *
+    *        c
+    *      /  \
+    *    /    B \
+    *   a-------b
+    *
+    * @param point_a The first vertex of the triangle.
+    * @param point_b The second vertex of the triangle where angle B is calculated.
+    * @param point_c The third vertex of the triangle.
+    *
+    * @return The angle B (in radians) between Point point_b and Point point_c.
+    */
     static double angle2(const Point& point_a, const Point& point_b, const Point& point_c)
     {
         double a = pow(point_c.x() - point_b.x(), 2) + pow(point_c.y() - point_b.y(), 2);
@@ -236,6 +348,17 @@ public:
         return acos(round(cos_value*T)/T2);
     }
 
+    /**
+    * @brief Returns true if the edge from Point A to Point B intersects with the specified Edge.
+    *
+    * The method uses the algorithm from http://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
+    *
+    * @param p1 The starting Point of the first edge.
+    * @param q1 The ending Point of the first edge.
+    * @param edge The Edge to check for intersection with the first edge.
+    *
+    * @return True if the edge from Point A to Point B intersects with the specified Edge; otherwise, false.
+    */
     static bool edge_intersect(const Point& p1, const Point& q1, const Edge& edge)
     {
         const Point& p2 = edge.p1();
@@ -252,6 +375,15 @@ public:
         return false;
     }
 
+    /**
+    * @brief Given three collinear points p, q, r, the function checks if point q lies on line segment 'pr'.
+    *
+    * @param p The first collinear Point.
+    * @param q The Point to check if it lies on the line segment.
+    * @param r The second collinear Point.
+    *
+    * @return True if Point q lies on the line segment 'pr'; otherwise, false.
+    */
     static bool on_segment(const Point& p, const Point& q, const Point& r)
     {
         if (q.x() <= std::max(p.x(), r.x()) && q.x() >= std::min(p.x(), r.x()) &&
@@ -262,6 +394,17 @@ public:
         return false;
     }
 
+    /**
+    * @brief Returns 1 if the points A, B, C form a counter-clockwise orientation,
+    *        -1 if they form a clockwise orientation, and 0 if they are collinear.
+    *
+    * @param A The first Point.
+    * @param B The second Point.
+    * @param C The third Point.
+    *
+    * @return 1 if the points A, B, C form a counter-clockwise orientation,
+    *        -1 if they form a clockwise orientation, and 0 if they are collinear.
+    */
     static int ccw(const Point& A, const Point& B, const Point& C)
     {
         double _area = (B.x() - A.x()) * (C.y() - A.y()) - (B.y() - A.y()) * (C.x() - A.x());
@@ -316,6 +459,18 @@ public:
 private:
     std::vector<Edge> _open_edges;
 
+    /**
+    * @brief Returns true if Edge edge1 is smaller than Edge edge2; otherwise, returns false.
+    *
+    * The comparison is based on the angles formed by the edges with respect to the given Points p1 and p2.
+    *
+    * @param p1 The reference Point for angle calculation related to edge1 and edge2.
+    * @param p2 The second reference Point for angle calculation.
+    * @param edge1 The first Edge to compare.
+    * @param edge2 The second Edge to compare.
+    *
+    * @return True if Edge edge1 is smaller than Edge edge2; otherwise, false.
+    */
     bool _less_than(const Point& p1, const Point& p2, const Edge& edge1, const Edge& edge2) const
     {
         if (edge1 == edge2) { return false; }
@@ -393,6 +548,22 @@ public:
 class VisibleVertices
 {
 public:
+    /**
+    * @brief Returns a list of Points in the graph visible by a specified point.
+    *
+    * If origin and/or destination Points are given, these will also be checked for visibility.
+    * The scan parameter can be set to 'full' to check for visibility against all points in the graph,
+    * or 'half' to check for visibility against half the points. This saves running time when building
+    * a complete visibility graph, as the points that are not checked will eventually be 'point.'
+    *
+    * @param point The reference Point from which visibility is checked.
+    * @param graph The Graph containing Points and Edges to check visibility against.
+    * @param origin Optional origin Point to check for visibility.
+    * @param destination Optional destination Point to check for visibility.
+    * @param scan Scan mode, either 'full' or 'half.'
+    *
+    * @return List of Points in the graph visible by the specified point.
+    */
     static std::vector<Point> visible_vertices(const Point& point, const Graph& graph, const Point* origin = nullptr, const Point* destination = nullptr, const std::string& scan = "full")
     {
         auto edges = graph.get_edges();

@@ -38,6 +38,19 @@
 namespace cppvisgraph
 {
 
+/**
+* @brief Hashmap that can be used as a priority queue.
+* This is a replica of priority_dict(dict) implemented in python
+*
+* Keys of the hashmap are items to be put into the queue, and values
+* are their respective priorities. All hashmap methods work as expected.
+* The advantage over a standard heapq-based priority queue is that priorities
+* of items can be efficiently updated (amortized O(1)) using code as
+* 'themap.push(item, new_priority).'
+*
+* Note that this is a modified version of
+* https://gist.github.com/matteodellamico/4451520
+*/
 template <typename Key, typename Value, typename Hash = std::hash<Key>>
 class priority_dict : public std::unordered_map<Key, Value, Hash>
 {
@@ -47,7 +60,7 @@ private:
     {
         bool operator()(const ValueKeyPair& lhs, const ValueKeyPair& rhs)
         {
-            return lhs.first > rhs.first;  // Greater than for min-heap, change to < for max-heap
+            return lhs.first > rhs.first;  // Greater than for min-heap, Smaller than for max-heap
         }
     };
     std::priority_queue<ValueKeyPair, std::vector<ValueKeyPair>, Greater> stl_heap;
