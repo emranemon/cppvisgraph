@@ -21,11 +21,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# clean build dir
-rm -rf build
-# make build dir and navigate to build dir
-mkdir build && cd build
-# cmake parent dir of CMakeLists.txt 
+#!/bin/bash
+
+# Get the directory where the script is located
+script_dir="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
+
+# Define Build Directory
+build_dir="$script_dir/build"
+
+# Try to Create the Build Directory
+mkdir -p "$build_dir"
+
+# Clean the Build directory
+find "$build_dir" -mindepth 1 -delete
+
+# Navigate to the Build directory
+cd "$build_dir"
+
+# Run cmake and make
 cmake ..
-# make app in pwd
 make
+
+# Return to the previous directory
+cd -

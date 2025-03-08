@@ -56,7 +56,7 @@ Navigate to the project dir and execute.
 ```
 Grant permission if necessary.
 ```
-chmod -R 777 .
+sudo chmod +x build.sh
 ```
 ### Run Examples
 If the Build was successfull, the examples should run.
