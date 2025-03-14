@@ -36,6 +36,8 @@ However, to build python wrapper, pybind11 is required. Check if it already exis
 2. CMAKE Ver. 3.10.0
 3. Python 3
 4. pybind11 Ver. 2.10.4
+
+To run the project in `Docker`, follow the instructions in the secret gist [cppvisgraph-docker.md](https://gist.github.com/emranemon/84b71e81bdda0d2b32f631e305b770f5)
 ### Use cases
 1. Can directly be used in any cpp projects. 
 2. Can also be used in python projects with the advantage of faster execution time.
