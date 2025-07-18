@@ -30,11 +30,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find the Python interpreter and pybind11 package
-## Modify the path according to the desired Python installation (If there are multiple python distributions installed)
-# set(Python_EXECUTABLE "/Library/Frameworks/Python.framework/Versions/3.8/bin/python3")
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
-## Modify the path according to the pybind11 installation (If there are multiple python distributions installed)
-# set(CMAKE_PREFIX_PATH "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pybind11" ${CMAKE_PREFIX_PATH})
 find_package(pybind11 REQUIRED)
 # Include cppvisgraph headers
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
