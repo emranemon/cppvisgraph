@@ -39,12 +39,11 @@
 #define CW -1
 #define DOUBLE_MAX std::numeric_limits<double>::max()
 #define DOUBLE_MIN std::numeric_limits<double>::min()
-#define COLIN_TOLERANCE 10
-#define T pow(10, COLIN_TOLERANCE)
-#define T2 pow(10.0, COLIN_TOLERANCE)
 
 namespace cppvisgraph
 {
+
+constexpr double PRECISION_SCALE = 1e10;
 
 class PolygonUtils
 {
@@ -345,7 +344,7 @@ public:
         double b = pow(point_c.x() - point_a.x(), 2) + pow(point_c.y() - point_a.y(), 2);
         double c = pow(point_b.x() - point_a.x(), 2) + pow(point_b.y() - point_a.y(), 2);
         double cos_value = (a + c - b) / (2 * sqrt(a) * sqrt(c));
-        return acos(round(cos_value*T)/T2);
+        return acos(round(cos_value*PRECISION_SCALE)/PRECISION_SCALE);
     }
 
     /**
@@ -408,7 +407,7 @@ public:
     static int ccw(const Point& A, const Point& B, const Point& C)
     {
         double _area = (B.x() - A.x()) * (C.y() - A.y()) - (B.y() - A.y()) * (C.x() - A.x());
-        double area = round(_area*T)/T2;
+        double area = round(_area*PRECISION_SCALE)/PRECISION_SCALE;
         if (area > 0.0)
             return CCW;
         if (area < 0.0)
