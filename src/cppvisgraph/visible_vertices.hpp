@@ -107,14 +107,20 @@ public:
     {
         if (p1.polygon_id() != p2.polygon_id()) return false;
         if (p1.polygon_id() == -1 || p2.polygon_id() == -1) return false;
-        // Both points are vertices of the SAME polygon - this is only ever reached for a
-        // non-adjacent pair (visible_vertices trusts adjacent same-polygon pairs without
-        // calling this at all). For a convex polygon, a chord between two non-adjacent
-        // vertices of its own boundary ALWAYS cuts through the interior - that's provably
-        // true from the vertex ordering alone, no geometry needed, and it sidesteps
-        // polygon_crossing's ray-vertex-alignment degeneracy entirely for the one case
-        // that degeneracy actually mattered for here.
-        if (graph.is_convex(p1.polygon_id())) return true;
+        // Both points are vertices of the SAME polygon. For a convex polygon, the vertex
+        // ordering alone (no geometry needed) answers this exactly: adjacent vertices are
+        // the polygon's own boundary edge (never interior), any other pair's chord ALWAYS
+        // cuts through the interior. Checked here, not left to callers like visible_vertices
+        // to gate around (it currently only ever calls this for non-adjacent pairs, but
+        // this function's own contract - "is this edge interior" - must hold standalone,
+        // for an adjacent pair too). Sidesteps polygon_crossing's ray-vertex-alignment
+        // degeneracy entirely for this case, convex or not.
+        if (graph.is_convex(p1.polygon_id()))
+        {
+            auto adjacent = graph.get_adjacent_points(p1);
+            bool is_adjacent = std::find(adjacent.begin(), adjacent.end(), p2) != adjacent.end();
+            return !is_adjacent;
+        }
         Point mid_point((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2);
         return polygon_crossing(mid_point, graph.get_polygons().at(p1.polygon_id()));
     }

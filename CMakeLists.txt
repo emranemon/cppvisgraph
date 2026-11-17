@@ -47,3 +47,8 @@ find_package(Threads REQUIRED)
 target_link_libraries(vgexample PRIVATE Threads::Threads)
 # Link against Python and pthread libraries
 target_link_libraries(cppyvisgraph PRIVATE ${Python_LIBRARIES} Threads::Threads)
+
+# Regression tests (no framework dependency - plain executables, exit 0 = pass)
+enable_testing()
+add_executable(test_convex_polygon_diagonal tests/test_convex_polygon_diagonal.cpp)
+add_test(NAME convex_polygon_diagonal COMMAND test_convex_polygon_diagonal)
