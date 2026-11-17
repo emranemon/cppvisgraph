@@ -39,12 +39,11 @@
 #define CW -1
 #define DOUBLE_MAX std::numeric_limits<double>::max()
 #define DOUBLE_MIN std::numeric_limits<double>::min()
-#define COLIN_TOLERANCE 10
-#define T pow(10, COLIN_TOLERANCE)
-#define T2 pow(10.0, COLIN_TOLERANCE)
 
 namespace cppvisgraph
 {
+
+constexpr double PRECISION_SCALE = 1e10;
 
 class PolygonUtils
 {
@@ -64,11 +63,17 @@ public:
     {
         Point p2(INF, p1.y());
         int intersect_count = 0;
+        // Same tolerance ccw() already rounds to below (PRECISION_SCALE) - a vertex that ccw()
+        // would call collinear with the ray (e.g. p1.y() off from a vertex's y by float noise
+        // like 1e-15) must not be excluded one line earlier by an exact, non-tolerant <, or
+        // one of that vertex's two adjacent edges silently drops out of the crossing count,
+        // flipping inside/outside parity for a point that's nowhere near the actual boundary.
+        constexpr double BOUNDS_EPSILON = 1.0 / PRECISION_SCALE;
         for (const Edge& edge : poly_edges)
         {
-            if (p1.y() < edge.p1().y() && p1.y() < edge.p2().y()) continue;
-            if (p1.y() > edge.p1().y() && p1.y() > edge.p2().y()) continue;
-            if (p1.x() > edge.p1().x() && p1.x() > edge.p2().x()) continue;
+            if (p1.y() < edge.p1().y() - BOUNDS_EPSILON && p1.y() < edge.p2().y() - BOUNDS_EPSILON) continue;
+            if (p1.y() > edge.p1().y() + BOUNDS_EPSILON && p1.y() > edge.p2().y() + BOUNDS_EPSILON) continue;
+            if (p1.x() > edge.p1().x() + BOUNDS_EPSILON && p1.x() > edge.p2().x() + BOUNDS_EPSILON) continue;
             // Deal with points collinear to p1
             bool edge_p1_collinear = (ccw(p1, edge.p1(), p2) == COLLINEAR);
             bool edge_p2_collinear = (ccw(p1, edge.p2(), p2) == COLLINEAR);
@@ -102,6 +107,20 @@ public:
     {
         if (p1.polygon_id() != p2.polygon_id()) return false;
         if (p1.polygon_id() == -1 || p2.polygon_id() == -1) return false;
+        // Both points are vertices of the SAME polygon. For a convex polygon, the vertex
+        // ordering alone (no geometry needed) answers this exactly: adjacent vertices are
+        // the polygon's own boundary edge (never interior), any other pair's chord ALWAYS
+        // cuts through the interior. Checked here, not left to callers like visible_vertices
+        // to gate around (it currently only ever calls this for non-adjacent pairs, but
+        // this function's own contract - "is this edge interior" - must hold standalone,
+        // for an adjacent pair too). Sidesteps polygon_crossing's ray-vertex-alignment
+        // degeneracy entirely for this case, convex or not.
+        if (graph.is_convex(p1.polygon_id()))
+        {
+            auto adjacent = graph.get_adjacent_points(p1);
+            bool is_adjacent = std::find(adjacent.begin(), adjacent.end(), p2) != adjacent.end();
+            return !is_adjacent;
+        }
         Point mid_point((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2);
         return polygon_crossing(mid_point, graph.get_polygons().at(p1.polygon_id()));
     }
@@ -345,7 +364,7 @@ public:
         double b = pow(point_c.x() - point_a.x(), 2) + pow(point_c.y() - point_a.y(), 2);
         double c = pow(point_b.x() - point_a.x(), 2) + pow(point_b.y() - point_a.y(), 2);
         double cos_value = (a + c - b) / (2 * sqrt(a) * sqrt(c));
-        return acos(round(cos_value*T)/T2);
+        return acos(round(cos_value*PRECISION_SCALE)/PRECISION_SCALE);
     }
 
     /**
@@ -408,7 +427,7 @@ public:
     static int ccw(const Point& A, const Point& B, const Point& C)
     {
         double _area = (B.x() - A.x()) * (C.y() - A.y()) - (B.y() - A.y()) * (C.x() - A.x());
-        double area = round(_area*T)/T2;
+        double area = round(_area*PRECISION_SCALE)/PRECISION_SCALE;
         if (area > 0.0)
             return CCW;
         if (area < 0.0)
@@ -429,10 +448,11 @@ public:
 
     void remove(const Point& p1, const Point& p2, const Edge& edge)
     {
-        int index = _index(p1, p2, edge) - 1;
-        if (_open_edges[index] == edge)
+        std::size_t idx = _index(p1, p2, edge);
+        // Guard against idx being 0 (which would cause pointer overflow when subtracting 1)
+        if (idx > 0 && _open_edges[idx - 1] == edge)
         {
-            _open_edges.erase(_open_edges.begin() + index);
+            _open_edges.erase(_open_edges.begin() + (idx - 1));
         }
     }
 

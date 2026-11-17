@@ -191,9 +191,41 @@ public:
             }
             if (polygon.size() > 2)
             {
+                convex_[pid] = is_convex_polygon(polygon);
                 ++pid;
             }
         }
+    }
+
+    // True if this polygon_id's input vertex ordering turns the same way (all cross
+    // products of consecutive edge vectors share a sign) at every vertex - the standard
+    // convexity test. Computed once, from the caller's ORIGINAL ordered point list, before
+    // it collapses into the unordered edge set polygons_ stores - that ordering isn't
+    // recoverable from the edge set afterward, so this must happen here, not later.
+    static bool is_convex_polygon(const std::vector<Point>& ordered_points)
+    {
+        size_t n = ordered_points.size();
+        if (n < 4) return true; // a triangle is always convex
+        int sign = 0;
+        for (size_t i = 0; i < n; ++i)
+        {
+            const Point& a = ordered_points[(i + n - 1) % n];
+            const Point& b = ordered_points[i];
+            const Point& c = ordered_points[(i + 1) % n];
+            double cross = (b.x() - a.x()) * (c.y() - b.y()) - (b.y() - a.y()) * (c.x() - b.x());
+            if (cross > 1e-9)
+            {
+                if (sign < 0) return false;
+                sign = 1;
+            }
+            else if (cross < -1e-9)
+            {
+                if (sign > 0) return false;
+                sign = -1;
+            }
+            // else: collinear vertex - doesn't violate convexity either way
+        }
+        return true;
     }
 
     std::vector<Point> get_adjacent_points(const Point& point) const 
@@ -228,7 +260,14 @@ public:
         return edges_;
     }
 
-    std::unordered_map<int, std::unordered_set<Edge, EdgeHash>> get_polygons() const 
+    bool is_convex(int polygon_id) const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = convex_.find(polygon_id);
+        return it != convex_.end() && it->second;
+    }
+
+    std::unordered_map<int, std::unordered_set<Edge, EdgeHash>> get_polygons() const
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return polygons_;
@@ -275,9 +314,11 @@ public:
         graph_ = std::move(other.graph_);
         edges_ = std::move(other.edges_);
         polygons_ = std::move(other.polygons_);
+        convex_ = std::move(other.convex_);
         other.graph_.clear();
         other.edges_.clear();
         other.polygons_.clear();
+        other.convex_.clear();
         other.mutex_.unlock();
         return *this;
     }
@@ -303,6 +344,7 @@ private:
     std::unordered_map<Point, std::unordered_set<Edge, EdgeHash>, PointHash> graph_;
     std::unordered_set<Edge, EdgeHash> edges_;
     std::unordered_map<int, std::unordered_set<Edge, EdgeHash>> polygons_;
+    std::unordered_map<int, bool> convex_;
 };
 
 }  // namespace cppvisgraph
