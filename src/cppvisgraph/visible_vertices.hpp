@@ -63,11 +63,17 @@ public:
     {
         Point p2(INF, p1.y());
         int intersect_count = 0;
+        // Same tolerance ccw() already rounds to below (PRECISION_SCALE) - a vertex that ccw()
+        // would call collinear with the ray (e.g. p1.y() off from a vertex's y by float noise
+        // like 1e-15) must not be excluded one line earlier by an exact, non-tolerant <, or
+        // one of that vertex's two adjacent edges silently drops out of the crossing count,
+        // flipping inside/outside parity for a point that's nowhere near the actual boundary.
+        constexpr double BOUNDS_EPSILON = 1.0 / PRECISION_SCALE;
         for (const Edge& edge : poly_edges)
         {
-            if (p1.y() < edge.p1().y() && p1.y() < edge.p2().y()) continue;
-            if (p1.y() > edge.p1().y() && p1.y() > edge.p2().y()) continue;
-            if (p1.x() > edge.p1().x() && p1.x() > edge.p2().x()) continue;
+            if (p1.y() < edge.p1().y() - BOUNDS_EPSILON && p1.y() < edge.p2().y() - BOUNDS_EPSILON) continue;
+            if (p1.y() > edge.p1().y() + BOUNDS_EPSILON && p1.y() > edge.p2().y() + BOUNDS_EPSILON) continue;
+            if (p1.x() > edge.p1().x() + BOUNDS_EPSILON && p1.x() > edge.p2().x() + BOUNDS_EPSILON) continue;
             // Deal with points collinear to p1
             bool edge_p1_collinear = (ccw(p1, edge.p1(), p2) == COLLINEAR);
             bool edge_p2_collinear = (ccw(p1, edge.p2(), p2) == COLLINEAR);
@@ -101,6 +107,14 @@ public:
     {
         if (p1.polygon_id() != p2.polygon_id()) return false;
         if (p1.polygon_id() == -1 || p2.polygon_id() == -1) return false;
+        // Both points are vertices of the SAME polygon - this is only ever reached for a
+        // non-adjacent pair (visible_vertices trusts adjacent same-polygon pairs without
+        // calling this at all). For a convex polygon, a chord between two non-adjacent
+        // vertices of its own boundary ALWAYS cuts through the interior - that's provably
+        // true from the vertex ordering alone, no geometry needed, and it sidesteps
+        // polygon_crossing's ray-vertex-alignment degeneracy entirely for the one case
+        // that degeneracy actually mattered for here.
+        if (graph.is_convex(p1.polygon_id())) return true;
         Point mid_point((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2);
         return polygon_crossing(mid_point, graph.get_polygons().at(p1.polygon_id()));
     }
@@ -428,10 +442,11 @@ public:
 
     void remove(const Point& p1, const Point& p2, const Edge& edge)
     {
-        int index = _index(p1, p2, edge) - 1;
-        if (_open_edges[index] == edge)
+        std::size_t idx = _index(p1, p2, edge);
+        // Guard against idx being 0 (which would cause pointer overflow when subtracting 1)
+        if (idx > 0 && _open_edges[idx - 1] == edge)
         {
-            _open_edges.erase(_open_edges.begin() + index);
+            _open_edges.erase(_open_edges.begin() + (idx - 1));
         }
     }
 
